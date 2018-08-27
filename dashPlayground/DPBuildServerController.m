@@ -303,6 +303,13 @@
                         [dict setValue:@"out-of-date" forKey:@"status"];
                         [dict setValue:@"need to re-compile" forKey:@"compileStatus"];
                     }
+                    else if ([message rangeOfString:@"have diverged"].location != NSNotFound) {
+                        if(report == YES) {
+                            [self.buildServerViewController addStringEvent:message];
+                        }
+                        [dict setValue:@"diverged" forKey:@"status"];
+                        [dict setValue:@"need to re-compile" forKey:@"compileStatus"];
+                    }
                     else {
                         if ([message rangeOfString:@"could not read Username"].location != NSNotFound) {
                             [self.buildServerViewController addStringEvent:message];
@@ -486,7 +493,24 @@
             
             [[SshConnection sharedInstance] sendExecuteCommand:command onSSH:buildServerSession error:error mainThread:YES dashClb:^(BOOL success, NSString *message) {
                 [self.buildServerViewController addStringEvent:message];
-                //            [self compileCheck:buildServerSession withRepository:repoObject reportConsole:NO];
+                
+//                [self compileCheck:buildServerSession type:type owner:gitOwner repoName:gitRepo branch:branch dict:<#(NSDictionary *)#> reportConsole:NO clb:^(BOOL success, NSDictionary *dictionary) {
+//
+//                }];
+                
+            }];
+        });
+    }
+    else if([repoStatus isEqualToString:@"diverged"]) {
+        dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_BACKGROUND, 0),^{
+            __block NSString *command = [NSString stringWithFormat:@"cd ~/src/%@/%@-%@/%@ && git rebase %@ && git merge %@ && git reset --hard origin/%@", type, gitOwner, gitRepo, branch, branch, branch, branch];
+            
+            [self.buildServerViewController addStringEvent:command];
+            
+            [[SshConnection sharedInstance] sendExecuteCommand:command onSSH:buildServerSession error:error mainThread:YES dashClb:^(BOOL success, NSString *message) {
+                [self.buildServerViewController addStringEvent:message];
+                
+//                [self compileCheck:buildServerSession withRepository:repoObject reportConsole:NO];
                 
             }];
         });

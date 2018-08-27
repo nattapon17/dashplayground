@@ -36,6 +36,16 @@
 
 @property (atomic) NSManagedObject* selectedObject;
 
+//Table Column
+@property (atomic) BOOL publicIPColumnBool;
+@property (atomic) BOOL instanceIDColumnBool;
+@property (atomic) BOOL instanceStateColumnBool;
+@property (atomic) BOOL chainColumnBool;
+@property (atomic) BOOL coreBranchColumnBool;
+@property (atomic) BOOL coreHeadColumnBool;
+@property (atomic) BOOL sentinelBranchColumnBool;
+@property (atomic) BOOL sentinelHeadColumnBool;
+
 @end
 
 @implementation VersioningViewController
@@ -63,6 +73,17 @@
     
     [self.versionCoreButton removeAllItems];
     [self.versionSentinelButton removeAllItems];
+}
+
+- (void)initializeColumnBool {
+    _publicIPColumnBool = NO;
+    _instanceIDColumnBool = NO;
+    _instanceStateColumnBool = NO;
+    _chainColumnBool = NO;
+    _coreBranchColumnBool = NO;
+    _coreHeadColumnBool = NO;
+    _sentinelBranchColumnBool = NO;
+    _sentinelHeadColumnBool = NO;
 }
 
 -(void)showTableContent:(NSManagedObject*)object
@@ -152,6 +173,60 @@
         }
     }
     
+    
+}
+
+#pragma mark - Table View
+
+- (void)tableView:(NSTableView *)tableView didClickTableColumn:(NSTableColumn *)tableColumn {
+    if([[tableColumn title] isEqualToString:@"Instance ID"]) {
+        NSSortDescriptor* sortDescriptor = [[NSSortDescriptor alloc] initWithKey: @"instanceId" ascending:_instanceIDColumnBool];
+        [self.arrayController setSortDescriptors:[NSArray arrayWithObject:sortDescriptor]];
+        if(_instanceIDColumnBool == YES) _instanceIDColumnBool = NO;
+        else _instanceIDColumnBool = YES;
+    }
+    else if([[tableColumn title] isEqualToString:@"IP Address"]) {
+        NSSortDescriptor* sortDescriptor = [[NSSortDescriptor alloc] initWithKey: @"publicIP" ascending:_publicIPColumnBool];
+        [self.arrayController setSortDescriptors:[NSArray arrayWithObject:sortDescriptor]];
+        if(_publicIPColumnBool == YES) _publicIPColumnBool = NO;
+        else _publicIPColumnBool = YES;
+    }
+    else if([[tableColumn title] isEqualToString:@"Instance State"]) {
+        NSSortDescriptor* sortDescriptor = [[NSSortDescriptor alloc] initWithKey: @"instanceState" ascending:_instanceStateColumnBool];
+        [self.arrayController setSortDescriptors:[NSArray arrayWithObject:sortDescriptor]];
+        if(_instanceStateColumnBool == YES) _instanceStateColumnBool = NO;
+        else _instanceStateColumnBool = YES;
+    }
+    else if([[tableColumn title] isEqualToString:@"Chain"]) {
+        NSSortDescriptor* sortDescriptor = [[NSSortDescriptor alloc] initWithKey: @"chainNetwork" ascending:_chainColumnBool];
+        [self.arrayController setSortDescriptors:[NSArray arrayWithObject:sortDescriptor]];
+        if(_chainColumnBool == YES) _chainColumnBool = NO;
+        else _chainColumnBool = YES;
+    }
+    else if([[tableColumn title] isEqualToString:@"Core Branch"]) {
+        NSSortDescriptor* sortDescriptor = [[NSSortDescriptor alloc] initWithKey: @"gitBranch" ascending:_coreBranchColumnBool];
+        [self.arrayController setSortDescriptors:[NSArray arrayWithObject:sortDescriptor]];
+        if(_coreBranchColumnBool == YES) _coreBranchColumnBool = NO;
+        else _coreBranchColumnBool = YES;
+    }
+    else if([[tableColumn title] isEqualToString:@"Core Head"]) {
+        NSSortDescriptor* sortDescriptor = [[NSSortDescriptor alloc] initWithKey: @"gitCommit" ascending:_coreHeadColumnBool];
+        [self.arrayController setSortDescriptors:[NSArray arrayWithObject:sortDescriptor]];
+        if(_coreHeadColumnBool == YES) _coreHeadColumnBool = NO;
+        else _coreHeadColumnBool = YES;
+    }
+    else if([[tableColumn title] isEqualToString:@"Sentinel Branch"]) {
+        NSSortDescriptor* sortDescriptor = [[NSSortDescriptor alloc] initWithKey: @"sentinelGitBranch" ascending:_sentinelBranchColumnBool];
+        [self.arrayController setSortDescriptors:[NSArray arrayWithObject:sortDescriptor]];
+        if(_sentinelBranchColumnBool == YES) _sentinelBranchColumnBool = NO;
+        else _sentinelBranchColumnBool = YES;
+    }
+    else if([[tableColumn title] isEqualToString:@"Sentinel Head"]) {
+        NSSortDescriptor* sortDescriptor = [[NSSortDescriptor alloc] initWithKey: @"sentinelGitCommit" ascending:_sentinelHeadColumnBool];
+        [self.arrayController setSortDescriptors:[NSArray arrayWithObject:sortDescriptor]];
+        if(_sentinelHeadColumnBool == YES) _sentinelHeadColumnBool = NO;
+        else _sentinelHeadColumnBool = YES;
+    }
     
 }
 
