@@ -10,6 +10,7 @@
 #import "SshConnection.h"
 #import "DialogAlert.h"
 #import "GithubAPI.h"
+#import "BuildServerViewController.h"
 
 #define BUILD_SERVER_IP @"[BUILD_SERVER_IP]"
 
@@ -43,6 +44,7 @@
                                     if(success == YES) {
                                         if([object count] > 0) {
                                             for(NSString *branch in object) {
+                                                
                                                 NSMutableArray *tableArray = [NSMutableArray array];
                                                 NSDictionary *tableDict = [NSMutableDictionary dictionary];
                                                 [tableDict setValue:[NSString stringWithFormat:@"%@-%@", [dict valueForKey:@"owner"], [dict valueForKey:@"repo"]] forKey:@"repoInfo"];
@@ -56,6 +58,7 @@
                                                         clb(YES, tableArray);
                                                     }
                                                 }];
+                                                
                                             }
                                         }
                                     }
@@ -272,6 +275,17 @@
     return ownerAndRepoArray;
 }
 
+//- (void)compileCheckDictionary:(NMSSHSession*)buildServerSession type:(NSString*)type owner:(NSString*)owner repoName:(NSString*)repoName branch:(NSString*)branch reportConsole:(BOOL)report clb:(dashDictInfoClb)clb {
+//
+//    NSDictionary *dict = [NSDictionary dictionary];
+//
+//    [self compileCheck:buildServerSession type:type owner:owner repoName:repoName branch:branch reportConsole:report clb:^(BOOL success, NSString *key, NSString *value) {
+//        if(success == YES) {
+//            [dict setValue:value forKey:key];
+//        }
+//    }];
+//}
+
 - (void)compileCheck:(NMSSHSession*)buildServerSession type:(NSString*)type owner:(NSString*)owner repoName:(NSString*)repoName branch:(NSString*)branch dict:(NSDictionary*)dict reportConsole:(BOOL)report clb:(dashDictInfoClb)clb {
     
     __block NSString *command = [NSString stringWithFormat:@"cd ~/src/%@/%@-%@/%@/ && git fetch", type, owner, repoName, branch];
@@ -288,18 +302,15 @@
                         if(report == YES) {
                             [self.buildServerViewController addStringEvent:message];
                         }
+//                        clb(YES, @"status", @"up-to-date");
                         [dict setValue:@"up-to-date" forKey:@"status"];
-                        
-                        [self checkExistingOfDashdInRepo:buildServerSession type:type Owner:owner RepoName:repoName onBranch:branch clb:^(BOOL success, NSString *message) {
-                            if(success == YES) {
-                                [dict setValue:message forKey:@"compileStatus"];
-                            }
-                        }];
                     }
                     else if ([message rangeOfString:@"Your branch is behind"].location != NSNotFound) {
                         if(report == YES) {
                             [self.buildServerViewController addStringEvent:message];
                         }
+//                        clb(YES, @"status", @"out-of-date");
+//                        clb(YES, @"compileStatus", @"need to re-compile");
                         [dict setValue:@"out-of-date" forKey:@"status"];
                         [dict setValue:@"need to re-compile" forKey:@"compileStatus"];
                     }
@@ -307,6 +318,8 @@
                         if(report == YES) {
                             [self.buildServerViewController addStringEvent:message];
                         }
+//                        clb(YES, @"status", @"diverged");
+//                        clb(YES, @"compileStatus", @"need to re-compile");
                         [dict setValue:@"diverged" forKey:@"status"];
                         [dict setValue:@"need to re-compile" forKey:@"compileStatus"];
                     }
@@ -318,6 +331,7 @@
                             if(report == YES) {
                                 [self.buildServerViewController addStringEvent:@"Error: could not get git information."];
                             }
+//                            clb(YES, @"status", @"unknown");
                             [dict setValue:@"unknown" forKey:@"status"];
                         }
                     }
@@ -327,7 +341,15 @@
                 
                 [[SshConnection sharedInstance] sendExecuteCommand:command onSSH:buildServerSession error:error mainThread:NO dashClb:^(BOOL success, NSString *message) {
                     if([message length] == 41) {
+//                        clb(YES, @"gitCommit", [message substringToIndex:7]);
                         [dict setValue:[message substringToIndex:7] forKey:@"gitCommit"];
+                        
+                        [self checkExistingOfDashdInRepo:buildServerSession type:type Owner:owner RepoName:repoName onBranch:branch onHead:[message substringToIndex:7] clb:^(BOOL success, NSString *message) {
+                            if(success == YES) {
+                                //                                clb(YES, @"compileStatus", message);
+                                [dict setValue:message forKey:@"compileStatus"];
+                            }
+                        }];
                     }
                     clb(YES,dict);
                 }];
@@ -340,6 +362,7 @@
                     if(report == YES) {
                         [self.buildServerViewController addStringEvent:@"Error: could not get git information."];
                     }
+//                    clb(YES, @"status", @"unknown");
                     [dict setValue:@"unknown" forKey:@"status"];
                     clb(YES,dict);
                 }
@@ -349,7 +372,7 @@
     });
 }
 
-- (void)checkExistingOfDashdInRepo:(NMSSHSession*)buildServerSession type:(NSString*)type Owner:(NSString*)gitOwner RepoName:(NSString*)gitRepo onBranch:(NSString*)branch clb:(dashClb)clb {
+- (void)checkExistingOfDashdInRepo:(NMSSHSession*)buildServerSession type:(NSString*)type Owner:(NSString*)gitOwner RepoName:(NSString*)gitRepo onBranch:(NSString*)branch onHead:(NSString*)commitHead clb:(dashClb)clb {
     
     __block NSString *compileStatus = @"";
     
@@ -371,8 +394,22 @@
                     clb(YES, compileStatus);
                 }
                 else if ([message rangeOfString:[NSString stringWithFormat:@"/home/ubuntu/src/%@/%@-%@/%@/src/dash-cli\n", type, gitOwner, gitRepo, branch]].location != NSNotFound) {
-                    compileStatus = @"finished";
-                    clb(YES, compileStatus);
+                    
+                    command = [NSString stringWithFormat:@"cd ~/src/%@/%@-%@/%@/src && ./dash-cli -version", type, gitOwner, gitRepo, branch];
+                    
+                    [[SshConnection sharedInstance] sendExecuteCommand:command onSSH:buildServerSession error:error mainThread:NO dashClb:^(BOOL success, NSString *message) {
+                        NSArray *messageArray = [message componentsSeparatedByString:@" "];
+                        if([messageArray count] == 6) {
+                            if ([[messageArray objectAtIndex:5] rangeOfString:commitHead].location != NSNotFound) {
+                                compileStatus = @"finished";
+                                clb(YES, compileStatus);
+                            }
+                            else {
+                                compileStatus = @"need to re-compile";
+                                clb(YES, compileStatus);
+                            }
+                        }
+                    }];
                 }
             }];
         }
@@ -543,6 +580,21 @@
             }
         }];
     });
+}
+
+- (void)switchRepositoryHead:(NSManagedObject*)object onHead:(NSString*)head buildServerSession:(NMSSHSession*)buildServerSession {
+    NSString *gitOwner = [object valueForKey:@"owner"];
+    NSString *gitRepo = [object valueForKey:@"repoName"];
+    NSString *branch = [object valueForKey:@"branch"];
+    NSString *type = [object valueForKey:@"type"];
+    
+    __block NSError *error = nil;
+    __block NSString *command = [NSString stringWithFormat:@"cd ~/src/%@/%@-%@/%@/ && git reset --hard %@", type, gitOwner, gitRepo, branch, head];
+    
+    [[SshConnection sharedInstance] sendExecuteCommand:command onSSH:buildServerSession error:error mainThread:NO dashClb:^(BOOL success, NSString *message) {
+        [self.buildServerViewController addStringEvent:message];
+        [[BuildServerViewController sharedInstance] refreshCompile];
+    }];
 }
 
 #pragma mark - Singleton methods

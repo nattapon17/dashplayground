@@ -181,6 +181,12 @@
                             [[SshConnection sharedInstance] sendExecuteCommand:command onSSH:sshSession error:error mainThread:NO dashClb:^(BOOL success, NSString *message) {
                                 
                             }];
+                            
+                            command = [NSString stringWithFormat:@"cd ~/src/dash/src/ && git reset --hard %@", commitHead];
+                            
+                            [[SshConnection sharedInstance] sendExecuteCommand:command onSSH:sshSession error:error mainThread:NO dashClb:^(BOOL success, NSString *message) {
+                                
+                            }];
                         }
                     });
                 }

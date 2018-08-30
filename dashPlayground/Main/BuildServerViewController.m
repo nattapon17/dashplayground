@@ -159,11 +159,15 @@
     
     if([self.buildServerStatusText.stringValue isEqualToString:@"Connected"]) {
         [self addStringEvent:@"Refreshing compile data..."];
-        [self.compileArrayController setContent:nil];
-        [[DPBuildServerController sharedInstance] getCompileData:self.buildServerSession dashClb:^(BOOL success, NSMutableArray *object) {
-            [self showTableContent:object onArrayController:self.compileArrayController];
-        }];
+        [self refreshCompile];
     }
+}
+
+- (void)refreshCompile {
+    [self.compileArrayController setContent:nil];
+    [[DPBuildServerController sharedInstance] getCompileData:self.buildServerSession dashClb:^(BOOL success, NSMutableArray *object) {
+        [self showTableContent:object onArrayController:self.compileArrayController];
+    }];
 }
 
 - (IBAction)compileUpdate:(id)sender {
@@ -191,6 +195,20 @@
         }];
     }
 }
+
+- (IBAction)pressSwitchHead:(id)sender {
+    NSInteger row = self.compileTable.selectedRow;
+    if(row == -1) {
+        return;
+    }
+    NSManagedObject * object = [self.compileArrayController.arrangedObjects objectAtIndex:row];
+    
+    NSString *commitHead = [[DialogAlert sharedInstance] showAlertWithTextField:@"Commit Head" message:@"Please input commit sha that you want to switch" placeHolder:@""];
+    if([commitHead length] > 0) {
+        [[DPBuildServerController sharedInstance] switchRepositoryHead:object onHead:commitHead buildServerSession:self.buildServerSession];
+    }
+}
+
 
 -(void)addStringEvent:(NSString*)string {
     dispatch_async(dispatch_get_main_queue(), ^{
@@ -231,6 +249,20 @@
 
 -(AppDelegate*)appDelegate {
     return [NSApplication sharedApplication].delegate;
+}
+
+#pragma mark - Singleton methods
+
++ (BuildServerViewController *)sharedInstance
+{
+    static BuildServerViewController *sharedInstance = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        sharedInstance = [[BuildServerViewController alloc] init];
+        
+        // Do any other initialisation stuff here
+    });
+    return sharedInstance;
 }
 
 @end

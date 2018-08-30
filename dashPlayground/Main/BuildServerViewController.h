@@ -14,6 +14,10 @@
 
 @property (readonly, strong, nonatomic) AppDelegate *appDelegate;
 
++(BuildServerViewController*)sharedInstance;
+
 -(void)addStringEvent:(NSString*)string;
+
+- (void)refreshCompile;
 
 @end
