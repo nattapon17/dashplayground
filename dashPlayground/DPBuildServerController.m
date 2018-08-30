@@ -82,35 +82,40 @@
                 
                 [self getDirectory:type onPath:@"/var/www/html" onSession:buildServerSession clb:^(BOOL success, NSArray *array) {
                     if(success == YES) {
-                        __block NSMutableArray *commitList = [NSMutableArray array];
-                        __block NSMutableArray *dateList;
+                        
                         if([array count] > 0) {
                             for(NSDictionary *dict in array) {
                                 [self getBranchList:buildServerSession onPath:@"/var/www/html" fromOwner:[dict valueForKey:@"owner"] fromRepo:[dict valueForKey:@"repo"] storageType:type clb:^(BOOL success, NSMutableArray *object) {
                                     if(success == YES) {
                                         if([object count] > 0) {
                                             for(NSString *branch in object) {
+                                                __block NSMutableArray *commitList = [NSMutableArray array];
+                                                __block NSMutableArray *dateList = [NSMutableArray array];
+                                                
                                                 [self getVersionsList:buildServerSession fromOwner:[dict valueForKey:@"owner"] fromRepo:[dict valueForKey:@"repo"] fromBranch:branch storageType:type clb:^(BOOL success, NSMutableArray *object) {
                                                     if(success == YES) {
                                                         commitList = object;
                                                         
                                                         [self getCreatedDirectoryDate:buildServerSession fromOwner:[dict valueForKey:@"owner"] fromRepo:[dict valueForKey:@"repo"] fromBranch:branch storageType:type commitList:commitList clb:^(BOOL success, NSMutableArray *object) {
                                                             if(success == YES) {
-                                                                dateList = object;
-                                                                
-                                                                NSMutableArray *tableArray = [NSMutableArray array];
-                                                                NSDictionary *tableDict = [NSMutableDictionary dictionary];
-                                                                [tableDict setValue:[dict valueForKey:@"owner"] forKey:@"owner"];
-                                                                [tableDict setValue:[dict valueForKey:@"repo"] forKey:@"repo"];
-                                                                [tableDict setValue:branch forKey:@"branch"];
-                                                                [tableDict setValue:dateList forKey:@"commitInfo"];
-                                                                [tableDict setValue:type forKey:@"type"];
-                                                                [tableArray addObject: tableDict];
-                                                                clb(YES, tableArray);
+                                                                [dateList addObject:object];
                                                             }
                                                         }];
+                                                        
+                                                        
                                                     }
                                                 }];
+                                                
+                                                NSMutableArray *tableArray = [NSMutableArray array];
+                                                NSDictionary *tableDict = [NSMutableDictionary dictionary];
+                                                [tableDict setValue:[dict valueForKey:@"owner"] forKey:@"owner"];
+                                                [tableDict setValue:[dict valueForKey:@"repo"] forKey:@"repo"];
+                                                [tableDict setValue:branch forKey:@"branch"];
+                                                [tableDict setValue:dateList forKey:@"commitInfo"];
+                                                [tableDict setValue:type forKey:@"type"];
+                                                [tableArray addObject: tableDict];
+                                                clb(YES, tableArray);
+                                                
                                             }
                                         }
                                     }
@@ -286,6 +291,24 @@
 //    }];
 //}
 
+- (void)compileCheckManageObject:(NMSSHSession*)buildServerSession withObject:(NSManagedObject*)object {
+    
+    NSString *type = [object valueForKey:@"type"];
+    NSString *owner = [object valueForKey:@"owner"];
+    NSString *repoName = [object valueForKey:@"repoName"];
+    NSString *branch = [object valueForKey:@"branch"];
+    
+    NSDictionary *dict = [NSDictionary dictionary];
+    
+    [self compileCheck:buildServerSession type:type owner:owner repoName:repoName branch:branch dict:dict reportConsole:NO clb:^(BOOL success, NSDictionary *dictionary) {
+        if(success == YES) {
+            [object setValue:[dict valueForKey:@"status"] forKey:@"status"];
+            [object setValue:[dict valueForKey:@"compileStatus"] forKey:@"compileStatus"];
+            [object setValue:[dict valueForKey:@"gitCommit"] forKey:@"gitCommit"];
+        }
+    }];
+}
+
 - (void)compileCheck:(NMSSHSession*)buildServerSession type:(NSString*)type owner:(NSString*)owner repoName:(NSString*)repoName branch:(NSString*)branch dict:(NSDictionary*)dict reportConsole:(BOOL)report clb:(dashDictInfoClb)clb {
     
     __block NSString *command = [NSString stringWithFormat:@"cd ~/src/%@/%@-%@/%@/ && git fetch", type, owner, repoName, branch];
@@ -302,15 +325,12 @@
                         if(report == YES) {
                             [self.buildServerViewController addStringEvent:message];
                         }
-//                        clb(YES, @"status", @"up-to-date");
                         [dict setValue:@"up-to-date" forKey:@"status"];
                     }
                     else if ([message rangeOfString:@"Your branch is behind"].location != NSNotFound) {
                         if(report == YES) {
                             [self.buildServerViewController addStringEvent:message];
                         }
-//                        clb(YES, @"status", @"out-of-date");
-//                        clb(YES, @"compileStatus", @"need to re-compile");
                         [dict setValue:@"out-of-date" forKey:@"status"];
                         [dict setValue:@"need to re-compile" forKey:@"compileStatus"];
                     }
@@ -318,8 +338,6 @@
                         if(report == YES) {
                             [self.buildServerViewController addStringEvent:message];
                         }
-//                        clb(YES, @"status", @"diverged");
-//                        clb(YES, @"compileStatus", @"need to re-compile");
                         [dict setValue:@"diverged" forKey:@"status"];
                         [dict setValue:@"need to re-compile" forKey:@"compileStatus"];
                     }
@@ -331,7 +349,6 @@
                             if(report == YES) {
                                 [self.buildServerViewController addStringEvent:@"Error: could not get git information."];
                             }
-//                            clb(YES, @"status", @"unknown");
                             [dict setValue:@"unknown" forKey:@"status"];
                         }
                     }
@@ -341,12 +358,10 @@
                 
                 [[SshConnection sharedInstance] sendExecuteCommand:command onSSH:buildServerSession error:error mainThread:NO dashClb:^(BOOL success, NSString *message) {
                     if([message length] == 41) {
-//                        clb(YES, @"gitCommit", [message substringToIndex:7]);
                         [dict setValue:[message substringToIndex:7] forKey:@"gitCommit"];
                         
                         [self checkExistingOfDashdInRepo:buildServerSession type:type Owner:owner RepoName:repoName onBranch:branch onHead:[message substringToIndex:7] clb:^(BOOL success, NSString *message) {
                             if(success == YES) {
-                                //                                clb(YES, @"compileStatus", message);
                                 [dict setValue:message forKey:@"compileStatus"];
                             }
                         }];
@@ -362,7 +377,6 @@
                     if(report == YES) {
                         [self.buildServerViewController addStringEvent:@"Error: could not get git information."];
                     }
-//                    clb(YES, @"status", @"unknown");
                     [dict setValue:@"unknown" forKey:@"status"];
                     clb(YES,dict);
                 }
@@ -531,9 +545,7 @@
             [[SshConnection sharedInstance] sendExecuteCommand:command onSSH:buildServerSession error:error mainThread:YES dashClb:^(BOOL success, NSString *message) {
                 [self.buildServerViewController addStringEvent:message];
                 
-//                [self compileCheck:buildServerSession type:type owner:gitOwner repoName:gitRepo branch:branch dict:<#(NSDictionary *)#> reportConsole:NO clb:^(BOOL success, NSDictionary *dictionary) {
-//
-//                }];
+                [self compileCheckManageObject:buildServerSession withObject:repoObject];
                 
             }];
         });
@@ -547,7 +559,7 @@
             [[SshConnection sharedInstance] sendExecuteCommand:command onSSH:buildServerSession error:error mainThread:YES dashClb:^(BOOL success, NSString *message) {
                 [self.buildServerViewController addStringEvent:message];
                 
-//                [self compileCheck:buildServerSession withRepository:repoObject reportConsole:NO];
+                [self compileCheckManageObject:buildServerSession withObject:repoObject];
                 
             }];
         });
@@ -593,7 +605,6 @@
     
     [[SshConnection sharedInstance] sendExecuteCommand:command onSSH:buildServerSession error:error mainThread:NO dashClb:^(BOOL success, NSString *message) {
         [self.buildServerViewController addStringEvent:message];
-        [[BuildServerViewController sharedInstance] refreshCompile];
     }];
 }
 

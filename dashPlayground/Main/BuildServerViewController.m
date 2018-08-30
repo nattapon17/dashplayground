@@ -243,7 +243,11 @@
     
     if([[object valueForKey:@"commitInfo"] count] > 0) {
         [self.buildArrayController setContent:nil];
-        [self showTableContent:[object valueForKey:@"commitInfo"] onArrayController:self.buildArrayController];
+        
+        NSArray *objectArrays = [object valueForKey:@"commitInfo"];
+        for(NSMutableArray *object in objectArrays) {
+            [self showTableContent:object onArrayController:self.buildArrayController];
+        }
     }
 }
 
