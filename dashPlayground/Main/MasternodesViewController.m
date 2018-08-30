@@ -430,6 +430,31 @@ NSString *terminalHeadString = @"";
 //    [self deSelectAll];
 }
 
+- (IBAction)wipeRemote:(id)sender {
+    [self.consoleTabSegmentedControl setSelectedSegment:1];//set console tab to masternode segment.
+    [self addStringEventToMasternodeConsole:@"Wiping all dash data on remotes..."];
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_BACKGROUND, 0),^{
+        for(NSManagedObject *object in [self.arrayController.arrangedObjects allObjects])
+        {
+            if([[object valueForKey:@"isSelected"] integerValue] == 1) {
+//                [[DPMasternodeController sharedInstance] stopDashdOnRemote:object onClb:^(BOOL success, NSString *message) {
+                    [[DPMasternodeController sharedInstance] wipeDataOnRemote:object onClb:^(BOOL success, NSString *message) {
+                        dispatch_async(dispatch_get_main_queue(), ^{
+                            [self addStringEventToMasternodeConsole:message];
+                        });
+                    }];
+//                }];
+                dispatch_async(dispatch_get_main_queue(), ^{
+                    [object setValue:nil forKey:@"lastBlock"];
+                    [object setValue:@(0) forKey:@"isSelected"];
+                    [[DPDataStore sharedInstance] saveContext:object.managedObjectContext];
+                });
+            }
+        }
+    });
+    //    [self deSelectAll];
+}
+
 //[self.consoleTabSegmentedControl setSelectedSegment:1];//set console tab to masternode segment.
 //[self addStringEventToMasternodeConsole:@"Stopping dashd on remotes..."];
 //
@@ -931,12 +956,27 @@ NSString *terminalHeadString = @"";
         
         NSArray *masternodeObjects = [self.arrayController.arrangedObjects allObjects];
         
-        [[DPMasternodeController sharedInstance] validateMasternodeBlock:masternodeObjects blockHash:blockhash clb:^(BOOL success, NSString *message) {
+        [[DPMasternodeController sharedInstance] reconsiderMasternodeBlock:masternodeObjects blockHash:blockhash clb:^(BOOL success, NSString *message) {
             if(success == YES) {
                 [self addStringEventToMasternodeConsole:message];
             }
         }];
     }
+}
+
+- (IBAction)pressClearBannedButton:(id)sender {
+    
+
+        [self.consoleTabSegmentedControl setSelectedSegment:1];//set console tab to masternode segment.
+    [self addStringEventToMasternodeConsole:@"Clear Banned for Nodes:"];
+        
+        NSArray *masternodeObjects = [self.arrayController.arrangedObjects allObjects];
+        
+        [[DPMasternodeController sharedInstance] clearBannedOnNodes:masternodeObjects withCallback:^(BOOL success, NSString *message) {
+            if(success == YES) {
+                [self addStringEventToMasternodeConsole:message];
+            }
+        }];
 }
 
 
