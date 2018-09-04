@@ -1946,8 +1946,8 @@
                                 }
                                 [self updateGitInfoForMasternode:masternode clb:nil];
                             } else {
-                                if ([[masternode valueForKey:@"masternodeState"] integerValue] != MasternodeState_Installed) {
-                                    [masternode setValue:@(MasternodeState_Installed) forKey:@"masternodeState"];
+                                if ([[masternode valueForKey:@"masternodeState"] integerValue] != MasternodeState_Stopped) {
+                                    [masternode setValue:@(MasternodeState_Stopped) forKey:@"masternodeState"];
                                     [[DPDataStore sharedInstance] saveContext:masternode.managedObjectContext];
                                 }
                                 [self updateGitInfoForMasternode:masternode clb:nil];

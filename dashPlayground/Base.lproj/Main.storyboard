@@ -1586,7 +1586,7 @@
                                                     </prototypeCellViews>
                                                 </tableColumn>
                                                 <tableColumn identifier="" width="131.5" minWidth="10" maxWidth="3.4028234663852886e+38" id="drn-Mk-3Bc">
-                                                    <tableHeaderCell key="headerCell" lineBreakMode="truncatingTail" borderStyle="border" alignment="left" title="Masternode State">
+                                                    <tableHeaderCell key="headerCell" lineBreakMode="truncatingTail" borderStyle="border" alignment="left" title="Node State">
                                                         <font key="font" metaFont="smallSystem"/>
                                                         <color key="textColor" name="headerTextColor" catalog="System" colorSpace="catalog"/>
                                                         <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="calibratedWhite"/>
@@ -1612,7 +1612,7 @@
                                                                         <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                                                                     </textFieldCell>
                                                                     <connections>
-                                                                        <binding destination="94e-jr-dEG" name="value" keyPath="objectValue.masternodeState" id="Idq-BS-xZn">
+                                                                        <binding destination="94e-jr-dEG" name="value" keyPath="objectValue.masternodeState" id="KJ7-Mb-5Vp">
                                                                             <dictionary key="options">
                                                                                 <string key="NSValueTransformerName">MasternodeStateTransformer</string>
                                                                             </dictionary>
@@ -4009,7 +4009,7 @@
                                                     <tableColumnResizingMask key="resizingMask" resizeWithTable="YES" userResizable="YES"/>
                                                     <prototypeCellViews>
                                                         <tableCellView id="7Xe-wi-fzg">
-                                                            <rect key="frame" x="99.5" y="1" width="105" height="17"/>
+                                                            <rect key="frame" x="99.5" y="1" width="106" height="17"/>
                                                             <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                                             <subviews>
                                                                 <textField verticalHuggingPriority="750" horizontalCompressionResistancePriority="250" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="QbX-k7-OUK">

@@ -865,7 +865,7 @@ NSString *terminalHeadString = @"";
         if(_instanceStateColumnBool == YES) _instanceStateColumnBool = NO;
         else _instanceStateColumnBool = YES;
     }
-    else if([[tableColumn title] isEqualToString:@"Masternode State"]) {
+    else if([[tableColumn title] isEqualToString:@"Node State"]) {
         NSSortDescriptor* sortDescriptor = [[NSSortDescriptor alloc] initWithKey: @"masternodeState" ascending:_masternodeStateColumnBool];
         [self.arrayController setSortDescriptors:[NSArray arrayWithObject:sortDescriptor]];
         if(_masternodeStateColumnBool == YES) _masternodeStateColumnBool = NO;
