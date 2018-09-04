@@ -21,6 +21,7 @@
         <attribute name="gitBranch" optional="YES" attributeType="String" syncable="YES"/>
         <attribute name="gitCommit" optional="YES" attributeType="String" syncable="YES"/>
         <attribute name="instanceId" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="instanceSize" optional="YES" attributeType="String" syncable="YES"/>
         <attribute name="instanceState" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES" syncable="YES"/>
         <attribute name="instanceType" optional="YES" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES" syncable="YES"/>
         <attribute name="isSelected" optional="YES" attributeType="Boolean" defaultValueString="0" usesScalarValueType="YES" syncable="YES"/>
@@ -58,7 +59,7 @@
     </entity>
     <elements>
         <element name="Branch" positionX="-54" positionY="99" width="128" height="150"/>
-        <element name="Masternode" positionX="-63" positionY="-18" width="128" height="525"/>
+        <element name="Masternode" positionX="-63" positionY="-18" width="128" height="540"/>
         <element name="Message" positionX="-45" positionY="144" width="128" height="30"/>
         <element name="Repository" positionX="-63" positionY="90" width="128" height="90"/>
     </elements>

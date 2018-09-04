@@ -51,6 +51,7 @@
 //Table Column
 @property (atomic) BOOL chainColumnBool;
 @property (atomic) BOOL instanceStateColumnBool;
+@property (atomic) BOOL instanceSizeColumnBool;
 @property (atomic) BOOL masternodeStateColumnBool;
 @property (atomic) BOOL syncStatusColumnBool;
 @property (atomic) BOOL gitBranchColumnBool;
@@ -100,6 +101,7 @@ NSString *terminalHeadString = @"";
     _gitBranchColumnBool = NO;
     _publicIPColumnBool = NO;
     _gitCommitColumnBool = NO;
+    _instanceSizeColumnBool = NO;
 }
 
 - (IBAction)pressCheckDevnet:(id)sender {
@@ -864,6 +866,12 @@ NSString *terminalHeadString = @"";
         [self.arrayController setSortDescriptors:[NSArray arrayWithObject:sortDescriptor]];
         if(_instanceStateColumnBool == YES) _instanceStateColumnBool = NO;
         else _instanceStateColumnBool = YES;
+    }
+    else if([[tableColumn title] isEqualToString:@"Instance Size"]) {
+        NSSortDescriptor* sortDescriptor = [[NSSortDescriptor alloc] initWithKey: @"instanceSize" ascending:_instanceSizeColumnBool];
+        [self.arrayController setSortDescriptors:[NSArray arrayWithObject:sortDescriptor]];
+        if(_instanceSizeColumnBool == YES) _instanceSizeColumnBool = NO;
+        else _instanceSizeColumnBool = YES;
     }
     else if([[tableColumn title] isEqualToString:@"Node State"]) {
         NSSortDescriptor* sortDescriptor = [[NSSortDescriptor alloc] initWithKey: @"masternodeState" ascending:_masternodeStateColumnBool];

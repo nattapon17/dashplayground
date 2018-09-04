@@ -2565,6 +2565,7 @@
                 NSDictionary * rDict = [NSMutableDictionary dictionary];
                 [rDict setValue:[dictionary valueForKey:@"InstanceId"] forKey:@"instanceId"];
                 [rDict setValue:[dictionary valueForKey:@"PublicIpAddress"] forKey:@"publicIP"];
+                [rDict setValue:[dictionary valueForKey:@"InstanceType"] forKey:@"instanceSize"];
                 [rDict setValue:@([self stateForStateName:[dictionary valueForKeyPath:@"State.Name"]]) forKey:@"instanceState"];
                 [instances addObject:rDict];
             }
