@@ -495,10 +495,13 @@
     NSString *branch = [repoObject valueForKey:@"branch"];
     NSString *type = [repoObject valueForKey:@"type"];
     NSString *repoStatus = [repoObject valueForKey:@"status"];
+    NSString *compileStatus = [repoObject valueForKey:@"compileStatus"];
     NSError *error = nil;
     
-    
-    if([repoStatus isEqualToString:@"up-to-date"]) {
+    if([repoStatus isEqualToString:@"up-to-date"] && [compileStatus isEqualToString:@"finished"]) {
+        [self copyDashAppToApache:repoObject buildServerSession:buildServerSession];
+    }
+    else if([repoStatus isEqualToString:@"up-to-date"]) {
         
         NSAlert *alert = [[DialogAlert sharedInstance] showAlertWithYesNoButton:@"Warning" message:@"Are you sure you want to re compile this repository?"];
         if ([alert runModal] == NSAlertFirstButtonReturn) {
@@ -523,14 +526,15 @@
                 }];
                 if(isSuccess == NO) return;
                 
-                [self.buildServerViewController addStringEvent:@"Executing make --file=Makefile -j4 -l8"];
-                [[SshConnection sharedInstance] sendExecuteCommand:[NSString stringWithFormat:@"cd ~/src/%@/%@-%@/%@/ && make --file=Makefile -j4 -l8", type, gitOwner, gitRepo, branch] onSSH:buildServerSession error:error mainThread:NO dashClb:^(BOOL success, NSString *message) {
+                [self.buildServerViewController addStringEvent:@"Executing make --file=Makefile -j5"];
+                [[SshConnection sharedInstance] sendExecuteCommand:[NSString stringWithFormat:@"cd ~/src/%@/%@-%@/%@/ && make --file=Makefile -j5", type, gitOwner, gitRepo, branch] onSSH:buildServerSession error:error mainThread:NO dashClb:^(BOOL success, NSString *message) {
                     [self.buildServerViewController addStringEvent:message];
                     isSuccess = success;
                 }];
                 
                 if(isSuccess == YES) {//copy dashd and dash-cli to apache2
                     [self copyDashAppToApache:repoObject buildServerSession:buildServerSession];
+                    [self uploadDashToS3Bucket:repoObject buildServerSession:buildServerSession];
                 }
             });
         }
@@ -579,7 +583,7 @@
         
         [self.buildServerViewController addStringEvent:@"Moving dash-cli and dashd to download directory..."];
     
-        [[SshConnection sharedInstance] sendExecuteCommand:command onSSH:buildServerSession error:error mainThread:NO dashClb:^(BOOL success, NSString *message) {
+        [[SshConnection sharedInstance] sendExecuteCommand:command onSSH:buildServerSession error:error mainThread:YES dashClb:^(BOOL success, NSString *message) {
             if([message length] == 41) {
                 command = [NSString stringWithFormat:@"sudo mkdir -p /var/www/html/%@/%@-%@/%@/%@ cd ~/src/%@/%@-%@/%@/src/ && sudo cp dashd /var/www/html/%@/%@-%@/%@/%@/", type, gitOwner, gitRepo, branch, message, type, gitOwner, gitRepo, branch, type, gitOwner, gitRepo, branch, message];
                 [buildServerSession.channel execute:command error:&error];
@@ -589,6 +593,58 @@
                 
                 [repoObject setValue:@"finished" forKey:@"compileStatus"];
                 [self.buildServerViewController addStringEvent:@"Finished compiling."];
+                
+                [self uploadDashToS3Bucket:repoObject buildServerSession:buildServerSession];
+            }
+            else {
+                [self.buildServerViewController addStringEvent:[NSString stringWithFormat:@"Error: %@", message]];
+            }
+        }];
+    });
+}
+
+- (void)uploadDashToS3Bucket:(NSManagedObject*)repoObject buildServerSession:(NMSSHSession*)buildServerSession {
+    NSString *gitOwner = [repoObject valueForKey:@"owner"];
+    NSString *gitRepo = [repoObject valueForKey:@"repoName"];
+    NSString *branch = [repoObject valueForKey:@"branch"];
+    NSString *type = [repoObject valueForKey:@"type"];
+    
+    __block NSError *error = nil;
+    __block NSString *command = [NSString stringWithFormat:@"cd ~/src/%@/%@-%@/%@/ && git rev-parse HEAD", type, gitOwner, gitRepo, branch];
+    
+    [self.buildServerViewController addStringEvent:@"Uploading dashd and dash-cli to AWS S3 bucket."];
+    
+    [[SshConnection sharedInstance] sendExecuteCommand:command onSSH:buildServerSession error:error mainThread:YES dashClb:^(BOOL success, NSString *message) {
+        if([message length] == 41) {
+            command = [NSString stringWithFormat:@"aws s3 sync /var/www/html/%@/%@-%@/%@/%@/ s3://dashplaygroundstorage/%@/%@/%@/%@/%@", type, gitOwner, gitRepo, branch, message, type, gitOwner, gitRepo, branch, message];
+            
+            [[SshConnection sharedInstance] sendExecuteCommand:command onSSH:buildServerSession error:error mainThread:YES dashClb:^(BOOL success, NSString *message) {
+                if(success == YES) {
+                    [self.buildServerViewController addStringEvent:@"Uploaded."];
+                    [self removeDashInApache:repoObject buildServerSession:buildServerSession];
+                }
+            }];
+        }
+    }];
+}
+
+- (void)removeDashInApache:(NSManagedObject*)repoObject buildServerSession:(NMSSHSession*)buildServerSession {
+    NSString *gitOwner = [repoObject valueForKey:@"owner"];
+    NSString *gitRepo = [repoObject valueForKey:@"repoName"];
+    NSString *branch = [repoObject valueForKey:@"branch"];
+    NSString *type = [repoObject valueForKey:@"type"];
+    
+    __block NSError *error = nil;
+    __block NSString *command = [NSString stringWithFormat:@"cd ~/src/%@/%@-%@/%@/ && git rev-parse HEAD", type, gitOwner, gitRepo, branch];
+    
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_BACKGROUND, 0),^{
+        [[SshConnection sharedInstance] sendExecuteCommand:command onSSH:buildServerSession error:error mainThread:NO dashClb:^(BOOL success, NSString *message) {
+            if([message length] == 41) {
+                command = [NSString stringWithFormat:@"rm -rf /var/www/html/%@/%@-%@/%@/%@/dashd", type, gitOwner, gitRepo, branch, message];
+                [buildServerSession.channel execute:command error:&error];
+                
+                command = [NSString stringWithFormat:@"rm -rf /var/www/html/%@/%@-%@/%@/%@/dash-cli", type, gitOwner, gitRepo, branch, message];
+                [buildServerSession.channel execute:command error:&error];
             }
         }];
     });
