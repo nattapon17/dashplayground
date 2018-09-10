@@ -534,7 +534,7 @@
                 
                 if(isSuccess == YES) {//copy dashd and dash-cli to apache2
                     [self copyDashAppToApache:repoObject buildServerSession:buildServerSession];
-                    [self uploadDashToS3Bucket:repoObject buildServerSession:buildServerSession];
+                    [self addUploadQueue:repoObject buildServerSession:buildServerSession];
                 }
             });
         }
@@ -592,9 +592,8 @@
                 [buildServerSession.channel execute:command error:&error];
                 
                 [repoObject setValue:@"finished" forKey:@"compileStatus"];
-                [self.buildServerViewController addStringEvent:@"Finished compiling."];
                 
-                [self uploadDashToS3Bucket:repoObject buildServerSession:buildServerSession];
+                [self addUploadQueue:repoObject buildServerSession:buildServerSession];
             }
             else {
                 [self.buildServerViewController addStringEvent:[NSString stringWithFormat:@"Error: %@", message]];
@@ -603,29 +602,35 @@
     });
 }
 
-- (void)uploadDashToS3Bucket:(NSManagedObject*)repoObject buildServerSession:(NMSSHSession*)buildServerSession {
+- (void)addUploadQueue:(NSManagedObject*)repoObject buildServerSession:(NMSSHSession*)buildServerSession {
     NSString *gitOwner = [repoObject valueForKey:@"owner"];
     NSString *gitRepo = [repoObject valueForKey:@"repoName"];
     NSString *branch = [repoObject valueForKey:@"branch"];
     NSString *type = [repoObject valueForKey:@"type"];
+    __block NSString *commitHash = [NSString string];
     
     __block NSError *error = nil;
     __block NSString *command = [NSString stringWithFormat:@"cd ~/src/%@/%@-%@/%@/ && git rev-parse HEAD", type, gitOwner, gitRepo, branch];
     
-    [self.buildServerViewController addStringEvent:@"Uploading dashd and dash-cli to AWS S3 bucket."];
-    
-    [[SshConnection sharedInstance] sendExecuteCommand:command onSSH:buildServerSession error:error mainThread:YES dashClb:^(BOOL success, NSString *message) {
+    [[SshConnection sharedInstance] sendExecuteCommand:command onSSH:buildServerSession error:error mainThread:NO dashClb:^(BOOL success, NSString *message) {
         if([message length] == 41) {
-            command = [NSString stringWithFormat:@"aws s3 sync /var/www/html/%@/%@-%@/%@/%@/ s3://dashplaygroundstorage/%@/%@/%@/%@/%@", type, gitOwner, gitRepo, branch, message, type, gitOwner, gitRepo, branch, message];
             
-            [[SshConnection sharedInstance] sendExecuteCommand:command onSSH:buildServerSession error:error mainThread:YES dashClb:^(BOOL success, NSString *message) {
+            commitHash = message;
+            
+            [self.buildServerViewController addStringEvent:[NSString stringWithFormat:@"Adding %@ version %@ to the upload queue.", type, commitHash]];
+            
+            command = [NSString stringWithFormat:@"cd ~/aws/script/ && echo \"%@ %@ %@ %@ %@\" >> upload-order.txt", type, gitOwner, gitRepo, branch, message];
+
+            [[SshConnection sharedInstance] sendExecuteCommand:command onSSH:buildServerSession error:error mainThread:NO dashClb:^(BOOL success, NSString *message) {
                 if(success == YES) {
-                    [self.buildServerViewController addStringEvent:@"Uploaded."];
-                    [self removeDashInApache:repoObject buildServerSession:buildServerSession];
+                    [self.buildServerViewController addStringEvent:@"Queue added."];
+                    NSLog(@"%@", message);
+//                    [self removeDashInApache:repoObject buildServerSession:buildServerSession];
                 }
             }];
         }
     }];
+    
 }
 
 - (void)removeDashInApache:(NSManagedObject*)repoObject buildServerSession:(NMSSHSession*)buildServerSession {

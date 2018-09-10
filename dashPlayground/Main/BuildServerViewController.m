@@ -36,6 +36,7 @@
 @property (strong) IBOutlet NSTableView *downloadTable;
 @property (strong) IBOutlet NSTableView *commitTable;
 
+@property (atomic) NSInteger downloadTableIndex;
 
 @end
 
@@ -46,6 +47,7 @@
     [super viewDidLoad];
     // Do view setup here.
     [self initialize];
+    self.downloadTableIndex = -1;
 }
 
 - (void)initialize {
@@ -60,7 +62,7 @@
     
     [DPBuildServerController sharedInstance].buildServerViewController = self;
     
-    [self.commitTable setSelectionHighlightStyle:NSTableViewSelectionHighlightStyleNone];
+//    [self.commitTable setSelectionHighlightStyle:NSTableViewSelectionHighlightStyleNone];
 }
 
 - (IBAction)changeServerIP:(id)sender {
@@ -209,6 +211,8 @@
     }
 }
 
+#pragma mark - Build
+
 
 -(void)addStringEvent:(NSString*)string {
     dispatch_async(dispatch_get_main_queue(), ^{
@@ -235,20 +239,30 @@
 
 - (void)tableViewSelectionDidChange:(NSNotification *)notification {
     NSInteger row = self.downloadTable.selectedRow;
+    
     if(row == -1) {
         [self.buildArrayController setContent:nil];
         return;
     }
-    NSManagedObject * object = [self.downloadArrayController.arrangedObjects objectAtIndex:row];
     
-    if([[object valueForKey:@"commitInfo"] count] > 0) {
-        [self.buildArrayController setContent:nil];
+    if(self.downloadTableIndex != row || [[self.buildArrayController content] count] == 0) {
+        NSManagedObject * object = [self.downloadArrayController.arrangedObjects objectAtIndex:row];
         
-        NSArray *objectArrays = [object valueForKey:@"commitInfo"];
-        for(NSMutableArray *object in objectArrays) {
-            [self showTableContent:object onArrayController:self.buildArrayController];
+        if([[object valueForKey:@"commitInfo"] count] > 0) {
+            [self.buildArrayController setContent:nil];
+            
+            NSArray *commitArray = [object valueForKey:@"commitInfo"];
+            for(NSMutableArray *commitObject in commitArray) {
+                [commitObject setValue:[object valueForKey:@"type"] forKey:@"type"];
+                [commitObject setValue:[object valueForKey:@"owner"] forKey:@"owner"];
+                [commitObject setValue:[object valueForKey:@"repo"] forKey:@"repo"];
+                [commitObject setValue:[object valueForKey:@"branch"] forKey:@"branch"];
+                [self showTableContent:commitObject onArrayController:self.buildArrayController];
+            }
         }
     }
+    
+    self.downloadTableIndex = row;
 }
 
 -(AppDelegate*)appDelegate {

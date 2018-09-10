@@ -46,15 +46,6 @@
 //    [[NSUserDefaults standardUserDefaults] removeObjectForKey:@"dashDPath"];
 //    [[NSUserDefaults standardUserDefaults] removeObjectForKey:@"dashCliPath"];
     
-    [[SshConnection sharedInstance] sshInWithKeyPath:[[DPMasternodeController sharedInstance] sshPath] masternodeIp:@"13.229.229.14" openShell:NO clb:^(BOOL success, NSString *message, NMSSHSession *sshSession) {
-        if(success == YES) {
-            NSError *error = nil;
-            [[SshConnection sharedInstance] sendExecuteCommand:@"python --version" onSSH:sshSession error:error mainThread:NO dashClb:^(BOOL success, NSString *message) {
-                NSLog(@"%@", message);
-            }];
-        }
-    }];
-    
     //end
     
     NSArray * checkingMasternodes = [[DPDataStore sharedInstance] allMasternodes];

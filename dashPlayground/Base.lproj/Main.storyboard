@@ -4629,7 +4629,7 @@
                                     <autoresizingMask key="autoresizingMask"/>
                                 </scroller>
                             </scrollView>
-                            <box title="Commit Control" titlePosition="belowTop" translatesAutoresizingMaskIntoConstraints="NO" id="pGe-tv-f2r">
+                            <box title="Build Control" titlePosition="belowTop" translatesAutoresizingMaskIntoConstraints="NO" id="pGe-tv-f2r">
                                 <rect key="frame" x="432" y="16" width="158" height="171"/>
                                 <view key="contentView" id="9iT-gB-feI">
                                     <rect key="frame" x="2" y="2" width="154" height="151"/>
@@ -4637,7 +4637,7 @@
                                     <subviews>
                                         <button verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="bcl-Zv-so9">
                                             <rect key="frame" x="14" y="113" width="126" height="32"/>
-                                            <buttonCell key="cell" type="push" bezelStyle="rounded" alignment="center" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="oUu-cN-e9u">
+                                            <buttonCell key="cell" type="push" title="Add to bucket" bezelStyle="rounded" alignment="center" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="oUu-cN-e9u">
                                                 <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
                                                 <font key="font" metaFont="system"/>
                                             </buttonCell>
