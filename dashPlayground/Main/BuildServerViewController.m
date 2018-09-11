@@ -34,7 +34,7 @@
 //Table
 @property (strong) IBOutlet NSTableView *compileTable;
 @property (strong) IBOutlet NSTableView *downloadTable;
-@property (strong) IBOutlet NSTableView *commitTable;
+@property (strong) IBOutlet NSTableView *buildTable;
 
 @property (atomic) NSInteger downloadTableIndex;
 
@@ -213,6 +213,15 @@
 
 #pragma mark - Build
 
+- (IBAction)addQueueUpload:(id)sender {
+    NSInteger row = self.buildTable.selectedRow;
+    if(row == -1) {
+        [[DialogAlert sharedInstance] showAlertWithOkButton:@"Error" message:@"Please select version from build table."];
+        return;
+    }
+    NSManagedObject * object = [self.buildArrayController.arrangedObjects objectAtIndex:row];
+    [[DPBuildServerController sharedInstance] uploadToS3Bucket:self.buildServerSession gitOwner:[object valueForKey:@"owner"] gitRepo:[object valueForKey:@"repoName"] branch:[object valueForKey:@"branch"] type:[object valueForKey:@"type"] commitHash:[object valueForKey:@"commitSha"]];
+}
 
 -(void)addStringEvent:(NSString*)string {
     dispatch_async(dispatch_get_main_queue(), ^{
@@ -255,7 +264,7 @@
             for(NSMutableArray *commitObject in commitArray) {
                 [commitObject setValue:[object valueForKey:@"type"] forKey:@"type"];
                 [commitObject setValue:[object valueForKey:@"owner"] forKey:@"owner"];
-                [commitObject setValue:[object valueForKey:@"repo"] forKey:@"repo"];
+                [commitObject setValue:[object valueForKey:@"repo"] forKey:@"repoName"];
                 [commitObject setValue:[object valueForKey:@"branch"] forKey:@"branch"];
                 [self showTableContent:commitObject onArrayController:self.buildArrayController];
             }

@@ -34,4 +34,8 @@
 
 - (void)switchRepositoryHead:(NSManagedObject*)object onHead:(NSString*)head buildServerSession:(NMSSHSession*)buildServerSession;
 
+- (void)uploadToS3Bucket:(NSManagedObject*)repoObject buildServerSession:(NMSSHSession*)buildServerSession;
+
+- (void)uploadToS3Bucket:(NMSSHSession*)buildServerSession gitOwner:(NSString*)gitOwner gitRepo:(NSString*)gitRepo branch:(NSString*)branch type:(NSString*)type commitHash:(NSString*)commitHash;
+
 @end

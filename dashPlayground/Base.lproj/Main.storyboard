@@ -4641,6 +4641,9 @@
                                                 <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
                                                 <font key="font" metaFont="system"/>
                                             </buttonCell>
+                                            <connections>
+                                                <action selector="addQueueUpload:" target="CVB-DR-3wQ" id="fOV-Bl-pmT"/>
+                                            </connections>
                                         </button>
                                     </subviews>
                                     <constraints>
@@ -4751,7 +4754,7 @@
                         <outlet property="buildArrayController" destination="UWx-F9-oJs" id="hBO-QG-ff3"/>
                         <outlet property="buildServerIPText" destination="tAF-29-IHL" id="i6H-EG-DDK"/>
                         <outlet property="buildServerStatusText" destination="REl-qa-qQM" id="CW7-C4-3JN"/>
-                        <outlet property="commitTable" destination="l7S-U9-FTM" id="6Yn-fl-19t"/>
+                        <outlet property="buildTable" destination="l7S-U9-FTM" id="vpf-yT-phS"/>
                         <outlet property="compileArrayController" destination="hHc-2P-xLz" id="v8K-ov-98P"/>
                         <outlet property="compileTable" destination="vsw-Yi-1r5" id="DyX-hA-a8B"/>
                         <outlet property="connectButton" destination="rOQ-5f-P2z" id="eSh-Ks-yJ9"/>

@@ -534,7 +534,7 @@
                 
                 if(isSuccess == YES) {//copy dashd and dash-cli to apache2
                     [self copyDashAppToApache:repoObject buildServerSession:buildServerSession];
-                    [self addUploadQueue:repoObject buildServerSession:buildServerSession];
+                    [self uploadToS3Bucket:repoObject buildServerSession:buildServerSession];
                 }
             });
         }
@@ -593,7 +593,7 @@
                 
                 [repoObject setValue:@"finished" forKey:@"compileStatus"];
                 
-                [self addUploadQueue:repoObject buildServerSession:buildServerSession];
+                [self uploadToS3Bucket:repoObject buildServerSession:buildServerSession];
             }
             else {
                 [self.buildServerViewController addStringEvent:[NSString stringWithFormat:@"Error: %@", message]];
@@ -602,7 +602,7 @@
     });
 }
 
-- (void)addUploadQueue:(NSManagedObject*)repoObject buildServerSession:(NMSSHSession*)buildServerSession {
+- (void)uploadToS3Bucket:(NSManagedObject*)repoObject buildServerSession:(NMSSHSession*)buildServerSession {
     NSString *gitOwner = [repoObject valueForKey:@"owner"];
     NSString *gitRepo = [repoObject valueForKey:@"repoName"];
     NSString *branch = [repoObject valueForKey:@"branch"];
@@ -617,13 +617,11 @@
             
             commitHash = message;
             
-            [self.buildServerViewController addStringEvent:[NSString stringWithFormat:@"Adding %@ version %@ to the upload queue.", type, commitHash]];
-            
             command = [NSString stringWithFormat:@"cd ~/aws/script/ && echo \"%@ %@ %@ %@ %@\" >> upload-order.txt", type, gitOwner, gitRepo, branch, message];
 
             [[SshConnection sharedInstance] sendExecuteCommand:command onSSH:buildServerSession error:error mainThread:NO dashClb:^(BOOL success, NSString *message) {
                 if(success == YES) {
-                    [self.buildServerViewController addStringEvent:@"Queue added."];
+                    [self.buildServerViewController addStringEvent:[NSString stringWithFormat:@"Added %@ version %@ to S3 Bucket.", type, commitHash]];
                     NSLog(@"%@", message);
 //                    [self removeDashInApache:repoObject buildServerSession:buildServerSession];
                 }
@@ -631,6 +629,20 @@
         }
     }];
     
+}
+
+- (void)uploadToS3Bucket:(NMSSHSession*)buildServerSession gitOwner:(NSString*)gitOwner gitRepo:(NSString*)gitRepo branch:(NSString*)branch type:(NSString*)type commitHash:(NSString*)commitHash {
+    
+    __block NSError *error = nil;
+    __block NSString *command = [NSString stringWithFormat:@"cd ~/aws/script/ && echo \"%@ %@ %@ %@ %@\" >> upload-order.txt", type, gitOwner, gitRepo, branch, commitHash];
+    
+    [[SshConnection sharedInstance] sendExecuteCommand:command onSSH:buildServerSession error:error mainThread:NO dashClb:^(BOOL success, NSString *message) {
+        if(success == YES) {
+            [self.buildServerViewController addStringEvent:[NSString stringWithFormat:@"Added %@ version %@ to S3 Bucket.", type, commitHash]];
+            NSLog(@"%@", message);
+            //                    [self removeDashInApache:repoObject buildServerSession:buildServerSession];
+        }
+    }];
 }
 
 - (void)removeDashInApache:(NSManagedObject*)repoObject buildServerSession:(NMSSHSession*)buildServerSession {
